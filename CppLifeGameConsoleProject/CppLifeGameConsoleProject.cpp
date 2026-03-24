@@ -1,22 +1,41 @@
 ﻿#include <iostream>
+#include <conio.h>
+
+#include <thread>
+#include <chrono>
+using namespace std::chrono_literals;
 
 #include "Vector.h"
 #include "Cell.h"
+#include "Console.h"
 
 Vector<Cell> colony;
-void Generate();
 
+void Generate();
 int IsColony(const Cell& cell);
+
+bool SetColony();
+void ShowColony();
 
 int main()
 {
-	PushBack(colony, Cell{ 5, 5 });
-	PushBack(colony, Cell{ 5, 6 });
-	PushBack(colony, Cell{ 5, 7 });
+	if (SetColony())
+	{
+		Key key;
+		CursorVisible(false);
 
-	Generate();
+		while (true)
+		{
+			if (_kbhit() && (Key)ReadKey() == Key::Esc)
+				break;
+			if (colony.size == 0)
+				break;
 
-	std::cout << "\n";
+			Generate();
+			ShowColony();
+			std::this_thread::sleep_for(500ms);
+		}
+	}
 }
 
 void Generate()
@@ -85,10 +104,7 @@ void Generate()
 		}
 		else
 			colony.items[i].type = CellType::Alife;
-	}
-
-	//for (int i{}; i < colony.size; i++)
-		
+	}		
 }
 
 int IsColony(const Cell& cell)
@@ -98,3 +114,87 @@ int IsColony(const Cell& cell)
 			return i;
 	return -1;
 }
+
+bool SetColony()
+{
+	int row{};
+	int column{};
+
+	Key key;
+
+	bool isExit{};
+	bool isQuit{};
+
+	while (true)
+	{
+		if (_kbhit())
+		{
+			key = (Key)ReadKey();
+
+			switch (key)
+			{
+			case ArrayLeft:
+				if (column > 0)
+					column--;
+				break;
+			case ArrayRight:
+				column++;
+				break;
+			case ArrayUp:
+				if (row > 0)
+					row--;
+				break;
+			case ArrayDown:
+				row++;
+				break;
+			case Space:
+			{
+				Cell candidat;
+				candidat.position.row = row;
+				candidat.position.column = column;
+
+				int index = IsColony(candidat);
+				if (index != -1)
+					Remove(colony, index);
+				else
+					PushBack(colony, candidat);
+
+				ShowColony();
+				break;
+			}
+			case Esc:
+				isExit = true;
+				isQuit = true;
+				break;
+			case Enter:
+				isExit = true;
+				break;
+			default:
+				break;
+			}
+
+			if (isExit)
+				break;
+
+			SetPosition(row, column * 2);
+		}
+	}
+	return !isQuit;
+}
+
+void ShowColony()
+{
+	Clear();
+	for (int i{}; i < colony.size; i++)
+	{
+		int row = colony.items[i].position.row;
+		int column = colony.items[i].position.column;
+
+		if (row < 0 || column < 0) continue;
+
+		WritePosition(row, column * 2, (char)178);
+		WritePosition(row, column * 2 + 1, (char)178);
+	}
+}
+
+
